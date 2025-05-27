@@ -1,0 +1,96 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { HospitalProvider } from './contexts/HospitalContext';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import UsersPage from './pages/UsersPage';
+import MedicalRecordsPage from './pages/MedicalRecordsPage';
+import DoctorsPage from './pages/DoctorsPage';
+import ServicesPage from './pages/ServicesPage';
+import RatingsPage from './pages/RatingsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import AddDepartmentPage from './pages/AddDepartmentPage';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login\" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const App: React.FC = () => {
+  return (
+    <Router>
+      <AuthProvider>
+        <HospitalProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/departments/new" 
+              element={
+                <ProtectedRoute>
+                  <AddDepartmentPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/users" 
+              element={
+                <ProtectedRoute>
+                  <UsersPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/medical-records" 
+              element={
+                <ProtectedRoute>
+                  <MedicalRecordsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/doctors" 
+              element={
+                <ProtectedRoute>
+                  <DoctorsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/services" 
+              element={
+                <ProtectedRoute>
+                  <ServicesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ratings" 
+              element={
+                <ProtectedRoute>
+                  <RatingsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </HospitalProvider>
+      </AuthProvider>
+    </Router>
+  );
+};
+
+export default App;
