@@ -14,7 +14,9 @@ import {
   Menu, 
   X,
   FilePlus2,
-  CircleUser
+  CircleUser,
+  User,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useHospital } from '../../contexts/HospitalContext';
@@ -37,11 +39,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'Users', path: '/users', icon: <Users className="w-5 h-5" /> },
     { label: 'Medical Records', path: '/medical-records', icon: <FileText className="w-5 h-5" /> },
     { label: 'Doctors', path: '/doctors', icon: <CircleUser className="w-5 h-5" /> },
+    { label: 'Shift Schedule', path: '/shift-schedule', icon: <Clock className="w-5 h-5" /> },
     { label: 'Services', path: '/services', icon: <FilePlus2 className="w-5 h-5" /> },
     { label: 'Ratings', path: '/ratings', icon: <Star className="w-5 h-5" /> },
     { label: 'Referrals', path: '/referrals', icon: <RefreshCw className="w-5 h-5" /> },
     { label: 'Notifications', path: '/notifications', icon: <Bell className="w-5 h-5" />, badge: unreadNotifications },
-    { label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5" /> },
+    // { label: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   const toggleSidebar = () => {
@@ -76,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Menu className="h-6 w-6" />
               </button>
               <div className="flex-shrink-0 flex items-center">
-                <Activity className="h-8 w-8 text-teal-600" />
+                <User className="h-8 w-8 text-teal-600" />
                 <span className="ml-2 text-xl font-bold text-teal-600">Nhap Admin</span>
               </div>
             </div>
@@ -93,29 +96,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       {unreadNotifications > 9 ? '9+' : unreadNotifications}
                     </span>
                   )}
-                </button>
-              </div>
-              <div className="ml-3 relative flex items-center">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                      {currentAdmin?.name.charAt(0)}
-                    </div>
-                  </div>
-                  <div className="ml-3 hidden md:block">
-                    <div className="text-sm font-medium text-gray-900">
-                      {currentAdmin?.name}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {hospital?.name}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="ml-4 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none"
-                >
-                  <LogOut className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -191,23 +171,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-              <div className="flex-shrink-0 w-full group block">
                 <div className="flex items-center">
-                  <div>
-                    <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                       {currentAdmin?.name.charAt(0)}
                     </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                  <div className="ml-3 hidden md:block">
+                    <div className="text-sm font-medium text-gray-900">
                       {currentAdmin?.name}
-                    </p>
-                    <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
                       {hospital?.name}
-                    </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <button
+                  onClick={handleLogout}
+                  className="ml-6 p-1 rounded-full text-red-500 hover:text-gray-500 focus:outline-none"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
             </div>
           </div>
         </div>

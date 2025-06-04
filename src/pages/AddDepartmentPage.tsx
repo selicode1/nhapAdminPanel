@@ -4,30 +4,51 @@ import Layout from '../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const AddDepartmentPage: React.FC = () => {
-  const { addDepartment } = useHospital();
-  const [formData, setFormData] = useState({
-    name: '',
-    contactPhone: '',
-    contactEmail: '',
-  });
+  const { addDepartment, hospital } = useHospital();
   const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      await addDepartment(formData);
-      setFormData({ name: '', contactPhone: '', contactEmail: '' });
-      // Show success message or redirect
-    } catch (error) {
-      // Handle error
-    } finally {
-      setIsLoading(false);
-    }
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setIsLoading(true);
+  const formData = new FormData(e.currentTarget);
+
+  const addDepartment = {
+    email: formData.get('email'),
+    name: formData.get('name'),
+    phone: formData.get('phone'),
+    hospitalId: hospital?.id,  // from your current hospital context or state
+  };
+
+  try {
+    // Add your data here
+    await addDoc(collection(db, "departments"), addDepartment);
+    console.log("department added successfully");
+
+    // Reset the form after successful submit
+    setFormData({ name: '', phone: '', email: '' });
+  } catch (error) {
+    console.error("Error adding department:", error);
+  } finally {
+    setIsLoading(false);  // <-- stop loading
+  }
+}
 
   return (
     <Layout>
@@ -40,30 +61,37 @@ const AddDepartmentPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Department Name"
+                        name="name"
+        type="text"
+        required
+        placeholder="Department Name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
+        onChange={handleChange}
               />
               <Input
                 label="Contact Phone"
-                type="tel"
-                value={formData.contactPhone}
-                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                required
+        name="phone"
+        type="tel"
+        required
+        placeholder="+123 456 7890"
+                value={formData.phone}
+        onChange={handleChange}
               />
               <Input
                 label="Contact Email"
+                name='email'
                 type="email"
-                value={formData.contactEmail}
-                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                placeholder='example@gmail.com'
                 required
+                        value={formData.email}
+        onChange={handleChange}
               />
               <Button
                 type="submit"
                 isLoading={isLoading}
                 fullWidth
               >
-                Add Department
+                {isLoading ? 'Adding...' : 'Add Department'}
               </Button>
             </form>
           </CardContent>

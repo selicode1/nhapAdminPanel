@@ -44,7 +44,7 @@ const MedicalRecordsPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-md"
-            icon={<Search className="w-4 h-4 text-gray-400" />}
+            // icon={<Search className="w-4 h-4 text-gray-400" />}
           />
         </div>
 
@@ -97,8 +97,7 @@ const MedicalRecordsPage: React.FC = () => {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Add New Medical Record"
-      >
+        title="Add New Medical Record" children={undefined}      >
         {/* Add record form */}
       </Modal>
 
@@ -106,8 +105,7 @@ const MedicalRecordsPage: React.FC = () => {
       <Modal
         isOpen={!!selectedRecord}
         onClose={() => setSelectedRecord(null)}
-        title="Medical Record Details"
-      >
+        title="Medical Record Details" children={undefined}      >
         {/* Record details */}
       </Modal>
     </Layout>

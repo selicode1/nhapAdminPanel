@@ -11,6 +11,11 @@ import ServicesPage from './pages/ServicesPage';
 import RatingsPage from './pages/RatingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AddDepartmentPage from './pages/AddDepartmentPage';
+import DepartmentsPage from './pages/DepartmentsPage';
+import SettingsPage from './pages/SettingsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ReferralsPage from './pages/ReferralsPage';
+import ShiftSchedulePage from './pages/ShiftSchedulePage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -34,6 +39,14 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/departments" 
+              element={
+                <ProtectedRoute>
+                  <DepartmentsPage />
                 </ProtectedRoute>
               } 
             />
@@ -69,6 +82,14 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               } 
             />
+                        <Route 
+              path="/shift-schedule" 
+              element={
+                <ProtectedRoute>
+                  <ShiftSchedulePage />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/services" 
               element={
@@ -77,11 +98,35 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               } 
             />
+                        <Route 
+              path="/notifications" 
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/ratings" 
               element={
                 <ProtectedRoute>
                   <RatingsPage />
+                </ProtectedRoute>
+              } 
+            />
+                        <Route 
+              path="/referrals" 
+              element={
+                <ProtectedRoute>
+                  <ReferralsPage />
+                </ProtectedRoute>
+              } 
+            />
+                        <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               } 
             />

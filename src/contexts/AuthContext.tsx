@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from '../firebase';  // adjust the path to your firebase config
 import { Admin } from '../types';
-import { admins } from '../data/mockData';
 
 interface AuthContextType {
   currentAdmin: Admin | null;
@@ -26,42 +27,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (pin: string): Promise<boolean> => {
-    try {
-      setError(null);
-      
-      // Validate PIN format (6-7 digits)
-      if (!/^\d{6,7}$/.test(pin)) {
-        setError('PIN must be 6 or 7 digits');
-        return false;
-      }
-      
-      // Find admin with matching PIN
-      const admin = admins.find(a => a.pin === pin);
-      
-      if (admin) {
-        // Update admin with current login time
-        const updatedAdmin = {
-          ...admin,
-          lastLogin: new Date().toISOString()
-        };
-        
-        setCurrentAdmin(updatedAdmin);
-        setIsAuthenticated(true);
-        
-        // Save to localStorage for persistence
-        localStorage.setItem('currentAdmin', JSON.stringify(updatedAdmin));
-        
-        return true;
-      } else {
-        setError('Invalid PIN');
-        return false;
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
+const login = async (pin: string): Promise<boolean> => {
+  console.log("login started for pin:", pin);
+  try {
+    setError(null);
+    
+    if (!/^\d{6,7}$/.test(pin)) {
+      setError('PIN must be 6 or 7 digits');
+      console.log("PIN format invalid");
       return false;
     }
-  };
+    
+    // Firestore query here
+    const q = query(collection(db, "admins"), where("pin", "==", pin));
+    const querySnapshot = await getDocs(q);
+    
+    console.log("Query snapshot size:", querySnapshot.size);
+    
+    if (!querySnapshot.empty) {
+      const adminDoc = querySnapshot.docs[0];
+      const adminData = adminDoc.data() as Admin;
+      
+      const updatedAdmin: Admin = {
+        ...adminData,
+        id: adminDoc.id,
+        lastLogin: new Date().toISOString(),
+      };
+      
+      console.log("Admin found:", updatedAdmin);
+      
+      setCurrentAdmin(updatedAdmin);
+      setIsAuthenticated(true);
+      localStorage.setItem('currentAdmin', JSON.stringify(updatedAdmin));
+      return true;
+    } else {
+      setError('Invalid PIN');
+      console.log("No admin found with this PIN");
+      return false;
+    }
+  } catch (err) {
+    setError('Login failed. Please try again.');
+    console.error("Login error:", err);
+    return false;
+  }
+};
+
 
   const logout = () => {
     setCurrentAdmin(null);

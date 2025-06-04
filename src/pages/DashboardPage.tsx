@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FileText, 
   FolderPlus, 
@@ -14,9 +14,43 @@ import Layout from '../components/layout/Layout';
 import MetricsCard from '../components/dashboard/MetricsCard';
 import ActionCard from '../components/dashboard/ActionCard';
 import NotificationPreview from '../components/dashboard/NotificationPreview';
+import { db } from "../firebase"; // adjust path if needed
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
 
 const DashboardPage: React.FC = () => {
-  const { hospital, metrics, notifications } = useHospital();
+  const { hospital, notifications } = useHospital();
+    const [metrics, setMetrics] = useState({
+    totalMedicalRecords: 0,
+    totalDepartments: 0,
+    totalUsers: 0,
+    totalDoctors: 0,
+  });
+  
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const [medicalSnap, deptSnap, usersSnap, doctorsSnap] = await Promise.all([
+          getCountFromServer(collection(db, "medicalRecords")),
+          getCountFromServer(query(collection(db, "departments"), where("hospitalId", '==', hospital?.id))),
+          getCountFromServer(query(collection(db, "users"), where("hospitalId", '==', hospital?.id))),
+          // getCountFromServer(query(collection(db, "users"),where("hospitalId", '==', hospital?.id), where("Role", "==", true)))
+          getCountFromServer(query(collection(db, "doctors"),where("hospitalId", '==', hospital?.id),))
+        ]);
+
+        setMetrics({
+          totalMedicalRecords: medicalSnap.data().count,
+          totalDepartments: deptSnap.data().count,
+          totalUsers: usersSnap.data().count,
+          totalDoctors: doctorsSnap.data().count,
+        });
+      } catch (err) {
+        console.error("Failed to fetch metrics:", err);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   return (
     <Layout>
@@ -37,7 +71,7 @@ const DashboardPage: React.FC = () => {
             title="Medical Records"
             value={metrics?.totalMedicalRecords || 0}
             icon={<FileText className="h-6 w-6" />}
-            change={{ value: 12, isPositive: true }}
+            // change={{ value: 12, isPositive: true }}
           />
           <MetricsCard
             title="Departments"
@@ -48,13 +82,13 @@ const DashboardPage: React.FC = () => {
             title="Users"
             value={metrics?.totalUsers || 0}
             icon={<Users className="h-6 w-6" />}
-            change={{ value: 8, isPositive: true }}
+            // change={{ value: 8, isPositive: true }}
           />
           <MetricsCard
             title="Doctors"
             value={metrics?.totalDoctors || 0}
             icon={<CircleUser className="h-6 w-6" />}
-            change={{ value: 5, isPositive: true }}
+            // change={{ value: 5, isPositive: true }}
           />
         </div>
 

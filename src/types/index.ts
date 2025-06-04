@@ -20,9 +20,8 @@ export interface Department {
   id: string;
   name: string;
   hospitalId: string;
-  contactPhone: string;
-  contactEmail: string;
-  createdAt: string;
+  phone: string;
+  email: string;
 }
 
 export interface Doctor {
@@ -59,8 +58,8 @@ export interface User {
   hospitalId: string;
   email: string;
   phone: string;
-  role: 'doctor' | 'user' | 'admin';
-  status: 'active' | 'inactive';
+  role: boolean;
+  status: boolean;
   createdAt: string;
 }
 
@@ -80,7 +79,7 @@ export interface Service {
   name: string;
   hospitalId: string;
   daysAvailable: string[];
-  timeSlots: string[];
+  timeSlots: string;
   forumPost?: ForumPost;
 }
 

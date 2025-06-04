@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <AuthLayout 
-      title="Hospital Admin Login" 
+      title="Nhap Admin Login" 
       subtitle="Enter your 6-7 digit PIN to access your hospital dashboard"
     >
       <form className="space-y-6" onSubmit={handleLogin}>
@@ -78,7 +78,7 @@ const LoginPage: React.FC = () => {
         </div>
       </form>
 
-      <div className="mt-6">
+      {/* <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300" />
@@ -93,7 +93,7 @@ const LoginPage: React.FC = () => {
             <p>Mercy Medical Center: <span className="font-medium">654321</span></p>
           </div>
         </div>
-      </div>
+      </div> */}
     </AuthLayout>
   );
 };

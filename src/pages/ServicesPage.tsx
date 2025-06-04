@@ -9,10 +9,19 @@ import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 
 const ServicesPage: React.FC = () => {
-  const { services, addService } = useHospital();
+  const { services, addService, updateService } = useHospital();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    daysAvailable: [] as string[],
+    timeSlots: '',
+    forumPost: {
+      title: '',
+      content: '',
+    },
+  });
 
   const daysOfWeek = [
     'Monday',
@@ -24,10 +33,146 @@ const ServicesPage: React.FC = () => {
     'Sunday',
   ];
 
-  const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    const hour = i.toString().padStart(2, '0');
-    return `${hour}:00`;
-  });
+  // const timeSlots = Array.from({ length: 24 }, (_, i) => {
+  //   const hour = i.toString().padStart(2, '0');
+  //   return `${hour}:00`;
+  // });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({
+        ...prev,
+        [e.target.name]: e.target.value,
+      }));
+    };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedService) {
+      const service = services.find(s => s.id === selectedService);
+      if (service) {
+        updateService({
+          ...service,
+          ...formData,
+          forumPost: formData.forumPost.title && formData.forumPost.content
+            ? {
+                id: service.forumPost?.id || `post-${Date.now()}`,
+                title: formData.forumPost.title,
+                content: formData.forumPost.content,
+                createdAt: service.forumPost?.createdAt || new Date().toISOString(),
+              }
+            : undefined,
+        });
+      }
+      setIsEditModalOpen(false);
+    } else {
+      await addService({
+        ...formData,
+        forumPost: formData.forumPost.title && formData.forumPost.content
+          ? {
+              id: `post-${Date.now()}`,
+              title: formData.forumPost.title,
+              content: formData.forumPost.content,
+              createdAt: new Date().toISOString(),
+            }
+          : undefined,
+      });
+      setIsAddModalOpen(false);
+    }
+    setFormData({
+      name: '',
+      daysAvailable: [],
+      timeSlots: '',
+      forumPost: {
+        title: '',
+        content: '',
+      },
+    });
+  };
+
+  // const ServiceForm = () => (
+  //   <form onSubmit={handleSubmit} className="space-y-6">
+  //     <Input
+  //       label="Service Name"
+  //       value={formData.name}
+  //       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+  //       required
+  //     />
+
+  //     <div>
+  //       <label className="block text-sm font-medium text-gray-700 mb-2">
+  //         Available Days
+  //       </label>
+  //       <div className="grid grid-cols-2 gap-4">
+  //         {daysOfWeek.map((day) => (
+  //           <label key={day} className="flex items-center space-x-2">
+  //             <input
+  //               type="checkbox"
+  //               checked={formData.daysAvailable.includes(day)}
+  //               onChange={(e) => {
+  //                 if (e.target.checked) {
+  //                   setFormData({
+  //                     ...formData,
+  //                     daysAvailable: [...formData.daysAvailable, day],
+  //                   });
+  //                 } else {
+  //                   setFormData({
+  //                     ...formData,
+  //                     daysAvailable: formData.daysAvailable.filter(d => d !== day),
+  //                   });
+  //                 }
+  //               }}
+  //               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+  //             />
+  //             <span>{day}</span>
+  //           </label>
+  //         ))}
+  //       </div>
+  //     </div>
+
+
+  //     <Input
+  //       label="Time Slots (e.g., 09:00-17:00)"
+  //       value={formData.timeSlots}
+  //       onChange={(e) => setFormData({ ...formData, timeSlots: e.target.value })}
+  //       required
+  //     />
+
+
+  //     {/* <div className="space-y-4">
+  //       <h3 className="text-lg font-medium">Forum Post (Optional)</h3>
+  //       <Input
+  //         label="Post Title"
+  //         value={formData.forumPost.title}
+  //         onChange={(e) =>
+  //           setFormData({
+  //             ...formData,
+  //             forumPost: { ...formData.forumPost, title: e.target.value },
+  //           })
+  //         }
+  //       />
+  //       <div>
+  //         <label className="block text-sm font-medium text-gray-700 mb-2">
+  //           Post Content
+  //         </label>
+  //         <textarea
+  //           value={formData.forumPost.content}
+  //           onChange={(e) =>
+  //             setFormData({
+  //               ...formData,
+  //               forumPost: { ...formData.forumPost, content: e.target.value },
+  //             })
+  //           }
+  //           rows={4}
+  //           className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+  //         />
+  //       </div>
+  //     </div> */}
+
+  //     <Button type="submit" fullWidth>
+  //       {selectedService ? 'Update Service' : 'Add Service'}
+  //     </Button>
+  //   </form>
+  // );
 
   return (
     <Layout>
@@ -60,6 +205,15 @@ const ServicesPage: React.FC = () => {
                       size="sm"
                       onClick={() => {
                         setSelectedService(service.id);
+                        setFormData({
+                          name: service.name,
+                          daysAvailable: service.daysAvailable,
+                          timeSlots: service.timeSlots,
+                          forumPost: {
+                            title: service.forumPost?.title || '',
+                            content: service.forumPost?.content || '',
+                          },
+                        });
                         setIsEditModalOpen(true);
                       }}
                     >
@@ -80,7 +234,7 @@ const ServicesPage: React.FC = () => {
                     <h4 className="text-sm font-medium text-gray-500">
                       Time Slots
                     </h4>
-                    <p className="mt-1">{service.timeSlots.join(', ')}</p>
+                    <p className="mt-1">{service.timeSlots}</p>
                   </div>
                   {service.forumPost && (
                     <div className="pt-4 border-t">
@@ -88,7 +242,9 @@ const ServicesPage: React.FC = () => {
                         <MessageSquare className="w-4 h-4 mr-2" />
                         <span className="text-sm font-medium">Forum Post</span>
                       </div>
-                      <h5 className="mt-2 font-medium">{service.forumPost.title}</h5>
+                      <h5 className="mt-2 font-medium">
+                        {service.forumPost.title}
+                      </h5>
                       <p className="mt-1 text-sm text-gray-500 line-clamp-2">
                         {service.forumPost.content}
                       </p>
@@ -104,21 +260,206 @@ const ServicesPage: React.FC = () => {
       {/* Add Service Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setFormData({
+            name: '',
+            daysAvailable: [],
+            timeSlots: '',
+            forumPost: {
+              title: '',
+              content: '',
+            },
+          });
+        }}
         title="Add New Service"
         size="lg"
       >
-        {/* Add service form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+      <Input
+        label="Service Name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+      />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Available Days
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          {daysOfWeek.map((day) => (
+            <label key={day} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.daysAvailable.includes(day)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormData({
+                      ...formData,
+                      daysAvailable: [...formData.daysAvailable, day],
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      daysAvailable: formData.daysAvailable.filter(d => d !== day),
+                    });
+                  }
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>{day}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+
+      <Input
+        label="Time Slots (e.g., 09:00-17:00)"
+        value={formData.timeSlots}
+        onChange={(e) => setFormData({ ...formData, timeSlots: e.target.value })}
+        required
+      />
+
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Forum Post (Optional)</h3>
+        <Input
+          label="Post Title"
+          value={formData.forumPost.title}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              forumPost: { ...formData.forumPost, title: e.target.value },
+            })
+          }
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Post Content
+          </label>
+          <textarea
+            value={formData.forumPost.content}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                forumPost: { ...formData.forumPost, content: e.target.value },
+              })
+            }
+            rows={4}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <Button type="submit" fullWidth>
+        {selectedService ? 'Update Service' : 'Add Service'}
+      </Button>
+    </form>
       </Modal>
 
       {/* Edit Service Modal */}
       <Modal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedService(null);
+          setFormData({
+            name: '',
+            daysAvailable: [],
+            timeSlots: '',
+            forumPost: {
+              title: '',
+              content: '',
+            },
+          });
+        }}
         title="Edit Service"
         size="lg"
       >
-        {/* Edit service form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+      <Input
+        label="Service Name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+      />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Available Days
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+          {daysOfWeek.map((day) => (
+            <label key={day} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.daysAvailable.includes(day)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormData({
+                      ...formData,
+                      daysAvailable: [...formData.daysAvailable, day],
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      daysAvailable: formData.daysAvailable.filter(d => d !== day),
+                    });
+                  }
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>{day}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+
+      <Input
+        label="Time Slots (e.g., 09:00-17:00)"
+        value={formData.timeSlots}
+        onChange={(e) => setFormData({ ...formData, timeSlots: e.target.value })}
+        required
+      />
+
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Forum Post (Optional)</h3>
+        <Input
+          label="Post Title"
+          value={formData.forumPost.title}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              forumPost: { ...formData.forumPost, title: e.target.value },
+            })
+          }
+        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Post Content
+          </label>
+          <textarea
+            value={formData.forumPost.content}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                forumPost: { ...formData.forumPost, content: e.target.value },
+              })
+            }
+            rows={4}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <Button type="submit" fullWidth>
+        {selectedService ? 'Update Service' : 'Add Service'}
+      </Button>
+    </form>
       </Modal>
     </Layout>
   );

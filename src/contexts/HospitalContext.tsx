@@ -11,18 +11,19 @@ import {
   Notification, 
   Metrics 
 } from '../types';
+
 import { 
-  hospitals, 
-  departments, 
-  doctors, 
-  users, 
-  medicalRecords, 
-  services, 
-  ratings, 
-  referrals, 
-  notifications, 
-  metrics as mockMetrics 
-} from '../data/mockData';
+  collection, 
+  query, 
+  where,  
+  addDoc, 
+  updateDoc, 
+  doc,
+  onSnapshot,
+  setDoc,
+  getDoc
+} from "firebase/firestore";
+import { db } from "../firebase";
 import { useAuth } from './AuthContext';
 
 interface HospitalContextType {
@@ -66,209 +67,227 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [hospitalReferrals, setHospitalReferrals] = useState<Referral[]>([]);
   const [hospitalNotifications, setHospitalNotifications] = useState<Notification[]>([]);
   const [hospitalMetrics, setHospitalMetrics] = useState<Metrics | null>(null);
+  
 
-  useEffect(() => {
-    // Load hospital data when admin changes
-    if (currentAdmin) {
-      const hospitalId = currentAdmin.hospitalId;
-      
-      // Find hospital
-      const currentHospital = hospitals.find(h => h.id === hospitalId) || null;
-      setHospital(currentHospital);
-      
-      // Filter data by hospital ID
-      setHospitalDepartments(departments.filter(d => d.hospitalId === hospitalId));
-      setHospitalDoctors(doctors.filter(d => d.hospitalId === hospitalId));
-      setHospitalUsers(users.filter(u => u.hospitalId === hospitalId));
-      setHospitalRecords(medicalRecords.filter(r => r.hospitalId === hospitalId));
-      setHospitalServices(services.filter(s => s.hospitalId === hospitalId));
-      setHospitalRatings(ratings.filter(r => r.hospitalId === hospitalId));
-      setHospitalReferrals(referrals.filter(r => r.hospitalId === hospitalId));
-      setHospitalNotifications(notifications.filter(n => n.hospitalId === hospitalId));
-      
-      // Set metrics
-      setHospitalMetrics(mockMetrics[hospitalId] || null);
-    } else {
-      // Reset all data when logged out
-      setHospital(null);
-      setHospitalDepartments([]);
-      setHospitalDoctors([]);
-      setHospitalUsers([]);
-      setHospitalRecords([]);
-      setHospitalServices([]);
-      setHospitalRatings([]);
-      setHospitalReferrals([]);
-      setHospitalNotifications([]);
-      setHospitalMetrics(null);
-    }
-  }, [currentAdmin]);
+useEffect(() => {
+  if (!currentAdmin?.hospitalId) return;
+
+  const hospitalId = currentAdmin.hospitalId;
+
+  const unsubHospital = onSnapshot(doc(db, "hospitals", hospitalId), (docSnap) => {
+    setHospital(docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Hospital : null);
+  });
+
+  const fetchCollection = (colName: string, setter: Function) => {
+    const q = query(collection(db, colName), where("hospitalId", "==", hospitalId));
+    return onSnapshot(q, (querySnap) => {
+      const items = querySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setter(items);
+    });
+  };
+
+  const unsubDepartments = fetchCollection("departments", setHospitalDepartments);
+  const unsubDoctors = fetchCollection("doctors", setHospitalDoctors);
+  const unsubUsers = fetchCollection("users", setHospitalUsers);
+  const unsubRecords = fetchCollection("medicalRecords", setHospitalRecords);
+  const unsubServices = fetchCollection("services", setHospitalServices);
+  const unsubRatings = fetchCollection("ratings", setHospitalRatings);
+  const unsubReferrals = fetchCollection("referrals", setHospitalReferrals);
+  const unsubNotifications = fetchCollection("notifications", setHospitalNotifications);
+
+  return () => {
+    unsubHospital();
+    unsubDepartments();
+    unsubDoctors();
+    unsubUsers();
+    unsubRecords();
+    unsubServices();
+    unsubRatings();
+    unsubReferrals();
+    unsubNotifications();
+  };
+}, [currentAdmin]);
+
+
 
   // Department functions
-  const addDepartment = (department: Omit<Department, 'id' | 'hospitalId' | 'createdAt'>) => {
-    if (!currentAdmin || !hospital) return;
-    
-    const newDepartment: Department = {
-      id: `dept-${Date.now()}`,
-      hospitalId: hospital.id,
-      createdAt: new Date().toISOString(),
-      ...department
-    };
-    
-    setHospitalDepartments(prev => [...prev, newDepartment]);
-  };
+const addDepartment = async (department: Omit<Department, 'id' | 'hospitalId' | 'createdAt'>) => {
+  if (!currentAdmin || !hospital) return;
 
-  const updateDepartment = (department: Department) => {
-    setHospitalDepartments(prev => 
-      prev.map(d => d.id === department.id ? department : d)
-    );
-  };
+  await addDoc(collection(db, "departments"), {
+    ...department,
+    hospitalId: hospital.id,
+    createdAt: new Date().toISOString()
+  });
+};
+
+
+const updateDepartment = async (department: Department) => {
+  const { id, ...data } = department;
+  await updateDoc(doc(db, "departments", id), { ...data });
+};
+
+
 
   // User functions
-  const addUser = (user: Omit<User, 'id' | 'hospitalId' | 'createdAt'>) => {
-    if (!currentAdmin || !hospital) return;
-    
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      hospitalId: hospital.id,
-      createdAt: new Date().toISOString(),
-      ...user
-    };
-    
-    setHospitalUsers(prev => [...prev, newUser]);
+const addUser = async (user: Omit<User, 'id' | 'hospitalId' | 'createdAt'>) => {
+  if (!currentAdmin || !hospital) return;
+
+  const newUser: User = {
+    id: `user-${Date.now()}`,
+    hospitalId: hospital.id,
+    createdAt: new Date().toISOString(),
+    ...user
   };
 
-  const updateUser = (user: User) => {
-    setHospitalUsers(prev => 
-      prev.map(u => u.id === user.id ? user : u)
-    );
+  await setDoc(doc(db, "users", newUser.id), newUser);
+};
+
+
+const updateUser = async (user: User) => {
+  const { id, ...data } = user;
+  await updateDoc(doc(db, "users", id), data);
+};
+
+const toggleUserStatus = async (userId: string) => {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef); // ✅ Correct function
+
+  if (!userSnap.exists()) return;
+
+  const currentStatus = userSnap.data().status;
+  await updateDoc(userRef, {
+    status: currentStatus === true ? false : true
+  });
+};
+
+// Add Doctor
+const addDoctor = async (doctor: Omit<Doctor, 'id' | 'hospitalId'>) => {
+  if (!currentAdmin || !hospital) return;
+
+  const newDoctor: Doctor = {
+    id: `doc-${Date.now()}`,
+    hospitalId: hospital.id,
+    ...doctor
   };
 
-  const toggleUserStatus = (userId: string) => {
-    setHospitalUsers(prev => 
-      prev.map(u => {
-        if (u.id === userId) {
-          return {
-            ...u,
-            status: u.status === 'active' ? 'inactive' : 'active'
-          };
-        }
-        return u;
-      })
-    );
+  const doctorRef = doc(db, "doctors", newDoctor.id);
+  await setDoc(doctorRef, newDoctor);
+  setHospitalDoctors(prev => [...prev, newDoctor]);
+};
+
+// Update Doctor
+const updateDoctor = async (doctor: Doctor) => {
+  const doctorRef = doc(db, "doctors", doctor.id);
+  await setDoc(doctorRef, doctor);
+  setHospitalDoctors(prev => prev.map(d => d.id === doctor.id ? doctor : d));
+};
+
+// Toggle Doctor Status
+const toggleDoctorStatus = async (doctorId: string) => {
+  const doctorRef = doc(db, "doctors", doctorId);
+  const snap = await getDoc(doctorRef);
+  if (!snap.exists()) return;
+
+  const currentStatus = snap.data().status;
+  await updateDoc(doctorRef, { status: currentStatus === 'active' ? 'inactive' : 'active' });
+
+  setHospitalDoctors(prev => 
+    prev.map(d => d.id === doctorId ? { ...d, status: currentStatus === 'active' ? 'inactive' : 'active' } : d)
+  );
+};
+
+
+const addService = async (service: Omit<Service, 'id' | 'hospitalId'>) => {
+  if (!currentAdmin || !hospital) return;
+
+  const newService: Service = {
+    id: `serv-${Date.now()}`,
+    hospitalId: hospital.id,
+    ...service
   };
 
-  // Doctor functions
-  const addDoctor = (doctor: Omit<Doctor, 'id' | 'hospitalId'>) => {
-    if (!currentAdmin || !hospital) return;
-    
-    const newDoctor: Doctor = {
-      id: `doc-${Date.now()}`,
-      hospitalId: hospital.id,
-      ...doctor
-    };
-    
-    setHospitalDoctors(prev => [...prev, newDoctor]);
-  };
+  const serviceRef = doc(db, "services", newService.id);
+  await setDoc(serviceRef, newService);
+  setHospitalServices(prev => [...prev, newService]);
+};
 
-  const updateDoctor = (doctor: Doctor) => {
-    setHospitalDoctors(prev => 
-      prev.map(d => d.id === doctor.id ? doctor : d)
-    );
-  };
+const updateService = async (service: Service) => {
+  const serviceRef = doc(db, "services", service.id);
+  await setDoc(serviceRef, service);
+  setHospitalServices(prev => prev.map(s => s.id === service.id ? service : s));
+};
 
-  const toggleDoctorStatus = (doctorId: string) => {
-    setHospitalDoctors(prev => 
-      prev.map(d => {
-        if (d.id === doctorId) {
-          return {
-            ...d,
-            status: d.status === 'active' ? 'inactive' : 'active'
-          };
-        }
-        return d;
-      })
-    );
-  };
-
-  // Service functions
-  const addService = (service: Omit<Service, 'id' | 'hospitalId'>) => {
-    if (!currentAdmin || !hospital) return;
-    
-    const newService: Service = {
-      id: `serv-${Date.now()}`,
-      hospitalId: hospital.id,
-      ...service
-    };
-    
-    setHospitalServices(prev => [...prev, newService]);
-  };
-
-  const updateService = (service: Service) => {
-    setHospitalServices(prev => 
-      prev.map(s => s.id === service.id ? service : s)
-    );
-  };
 
   // Medical record functions
-  const addMedicalRecord = (record: Omit<MedicalRecord, 'id' | 'hospitalId' | 'createdAt' | 'updatedAt'>) => {
-    if (!currentAdmin || !hospital) return;
-    
-    const now = new Date().toISOString();
-    const newRecord: MedicalRecord = {
-      id: `rec-${Date.now()}`,
-      hospitalId: hospital.id,
-      createdAt: now,
-      updatedAt: now,
-      ...record
-    };
-    
-    setHospitalRecords(prev => [...prev, newRecord]);
+const addMedicalRecord = async (
+  record: Omit<MedicalRecord, 'id' | 'hospitalId' | 'createdAt' | 'updatedAt'>
+) => {
+  if (!currentAdmin || !hospital) return;
+
+  const now = new Date().toISOString();
+  const newRecord: MedicalRecord = {
+    id: `rec-${Date.now()}`,
+    hospitalId: hospital.id,
+    createdAt: now,
+    updatedAt: now,
+    ...record
   };
 
-  const updateMedicalRecord = (record: MedicalRecord) => {
-    setHospitalRecords(prev => 
-      prev.map(r => {
-        if (r.id === record.id) {
-          return {
-            ...record,
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return r;
-      })
-    );
+  const recordRef = doc(db, "records", newRecord.id);
+  await setDoc(recordRef, newRecord);
+  setHospitalRecords(prev => [...prev, newRecord]);
+};
+
+const updateMedicalRecord = async (record: MedicalRecord) => {
+  const updated = {
+    ...record,
+    updatedAt: new Date().toISOString()
   };
 
-  // Referral functions
-  const updateReferralStatus = (referralId: string, status: 'accepted' | 'declined') => {
-    setHospitalReferrals(prev => 
-      prev.map(r => {
-        if (r.id === referralId) {
-          return {
-            ...r,
-            status,
-            treatmentGiven: status === 'declined' ? 'Service declined' : r.treatmentGiven
-          };
-        }
-        return r;
-      })
-    );
+  const recordRef = doc(db, "records", record.id);
+  await setDoc(recordRef, updated);
+
+  setHospitalRecords(prev =>
+    prev.map(r => r.id === record.id ? updated : r)
+  );
+};
+
+
+const updateReferralStatus = async (
+  referralId: string,
+  status: 'accepted' | 'declined'
+) => {
+  const referralRef = doc(db, "referrals", referralId);
+  const snap = await getDoc(referralRef);
+  if (!snap.exists()) return;
+
+  const updatedData = {
+    status,
+    treatmentGiven: status === 'declined' ? 'Service declined' : snap.data().treatmentGiven
   };
 
-  // Notification functions
-  const markNotificationAsRead = (notificationId: string) => {
-    setHospitalNotifications(prev => 
-      prev.map(n => {
-        if (n.id === notificationId) {
-          return {
-            ...n,
-            read: true
-          };
-        }
-        return n;
-      })
-    );
-  };
+  await updateDoc(referralRef, updatedData);
+
+  setHospitalReferrals(prev =>
+    prev.map(r =>
+      r.id === referralId
+        ? { ...r, ...updatedData }
+        : r
+    )
+  );
+};
+
+
+const markNotificationAsRead = async (notificationId: string) => {
+  const notifRef = doc(db, "notifications", notificationId);
+  await updateDoc(notifRef, { read: true });
+
+  setHospitalNotifications(prev =>
+    prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+  );
+};
+
 
   return (
     <HospitalContext.Provider 
